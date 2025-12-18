@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Capture - Screen Q&A</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            html, body {
+                height: 100%;
+                background: transparent;
+                overflow: hidden;
+            }
+            capture-view {
+                display: block;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <capture-view id="captureView"></capture-view>
+        
+        <script type="module">
+            import { CaptureView } from './components/views/CaptureView.js';
+            
+            const { ipcRenderer } = require('electron');
+            
+            const captureView = document.getElementById('captureView');
+            
+            // Load transparency setting from localStorage (synced with main app)
+            const updateTransparency = () => {
+                try {
+                    const backgroundTransparency = localStorage.getItem('backgroundTransparency');
+                    const alpha = backgroundTransparency !== null ? parseFloat(backgroundTransparency) : 0.5;
+                    
+                    const root = document.documentElement;
+                    root.style.setProperty('--app-background', `rgba(0, 0, 0, ${alpha})`);
+                    
+                    const baseBlur = 10 + (alpha * 30);
+                    const strongBlur = 20 + (alpha * 40);
+                    const subtleBlur = 5 + (alpha * 15);
+                    root.style.setProperty('--glass-blur', `blur(${baseBlur}px)`);
+                    root.style.setProperty('--glass-blur-strong', `blur(${strongBlur}px)`);
+                    root.style.setProperty('--glass-blur-subtle', `blur(${subtleBlur}px)`);
+                } catch (e) {
+                    console.error('Error loading transparency:', e);
+                }
+            };
+            
+            updateTransparency();
+            
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'backgroundTransparency') {
+                    updateTransparency();
+                }
+            });
+
+            ipcRenderer.on('update-transparency', (event, alpha) => {
+                localStorage.setItem('backgroundTransparency', alpha);
+                updateTransparency();
+            });
+            
+            // Handle close button
+            captureView.onClose = () => {
+                ipcRenderer.send('close-capture-window');
+            };
+            
+            // Listen for response updates from main window
+            ipcRenderer.on('capture-response-update', (event, response) => {
+                console.log('[CaptureWindow] *** RECEIVED response update:', response?.substring(0, 100));
+                if (captureView && response) {
+                    console.log('[CaptureWindow] Setting captureView.response');
+                    captureView.response = response;
+                    captureView.requestUpdate();
+                }
+            });
+            
+            // Handle sending messages back to main window
+            captureView.onSendMessage = (message) => {
+                console.log('[CaptureWindow] Sending message to main:', message);
+                ipcRenderer.send('capture-send-message', message);
+            };
+        </script>
+    </body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>World - Perplexity Search</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            html, body {
+                height: 100%;
+                background: transparent;
+                overflow: hidden;
+            }
+            world-view {
+                display: block;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <world-view id="worldView"></world-view>
+        
+        <script type="module">
+            import { WorldView } from './components/views/WorldView.js';
+            
+            const { ipcRenderer } = require('electron');
+            
+            const worldView = document.getElementById('worldView');
+            
+            // Load transparency setting from localStorage (synced with main app)
+            const updateTransparency = () => {
+                try {
+                    // Get the background transparency value from main window's localStorage
+                    const backgroundTransparency = localStorage.getItem('backgroundTransparency');
+                    const alpha = backgroundTransparency !== null ? parseFloat(backgroundTransparency) : 0.5;
+                    
+                    // Apply transparency to the entire window background
+                    const root = document.documentElement;
+                    root.style.setProperty('--app-background', `rgba(0, 0, 0, ${alpha})`);
+                    
+                    // Update glass blur intensity
+                    const baseBlur = 10 + (alpha * 30);
+                    const strongBlur = 20 + (alpha * 40);
+                    const subtleBlur = 5 + (alpha * 15);
+                    root.style.setProperty('--glass-blur', `blur(${baseBlur}px)`);
+                    root.style.setProperty('--glass-blur-strong', `blur(${strongBlur}px)`);
+                    root.style.setProperty('--glass-blur-subtle', `blur(${subtleBlur}px)`);
+                } catch (e) {
+                    console.error('Error loading transparency:', e);
+                }
+            };
+            
+            updateTransparency();
+            
+            // Listen for transparency changes from main window
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'backgroundTransparency') {
+                    updateTransparency();
+                }
+            });
+
+            // Listen for IPC updates from main window
+            ipcRenderer.on('update-transparency', (event, alpha) => {
+                localStorage.setItem('backgroundTransparency', alpha);
+                updateTransparency();
+            });
+            
+            // Handle close button
+            worldView.onClose = () => {
+                ipcRenderer.send('close-world-window');
+            };
+            
+            // Handle Perplexity search
+            worldView.onPerplexitySearch = async (query) => {
+                try {
+                    const result = await ipcRenderer.invoke('perplexity-search', query);
+                    return result;
+                } catch (error) {
+                    console.error('Perplexity search error:', error);
+                    throw error;
+                }
+            };
+
+            // Debug: Log when perplexity-chunk is received in world.html
+            ipcRenderer.on('perplexity-chunk', (event, data) => {
+                console.log('world.html received perplexity-chunk:', data);
+                console.log('Data type:', typeof data);
+                if (typeof data === 'object') {
+                    console.log('Content:', data.content?.substring(0, 100));
+                    console.log('Citations:', data.citations);
+                }
+            });
+        </script>
+    </body>
+</html>

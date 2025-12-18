@@ -1,0 +1,554 @@
+{
+  "info": {
+    "name": "Elk AI Backend - Phase 1",
+    "description": "Complete API testing collection for Elk AI backend with authentication, AI providers, payments, and rate limiting",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.environment.set('access_token', response.data.accessToken);",
+                  "        pm.environment.set('refresh_token', response.data.refreshToken);",
+                  "        pm.environment.set('user_id', response.data.user.id);",
+                  "        pm.test('Registration successful', function () {",
+                  "            pm.expect(response.success).to.be.true;",
+                  "            pm.expect(response.data.user.email).to.equal(pm.environment.get('user_email'));",
+                  "        });",
+                  "    }",
+                  "} else {",
+                  "    pm.test('Registration failed as expected', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('access_token', response.data.accessToken);",
+                  "    pm.environment.set('refresh_token', response.data.refreshToken);",
+                  "    pm.test('Login successful', function () {",
+                  "        pm.expect(response.success).to.be.true;",
+                  "        pm.expect(response.data.accessToken).to.be.a('string');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Login failed', function () {",
+                  "        pm.expect(pm.response.code).to.equal(401);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Providers",
+      "item": [
+        {
+          "name": "Gemini",
+          "item": [
+            {
+              "name": "Initialize Gemini Session",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionType\": \"LIVE_CONVERSATION\",\n  \"profile\": \"interview\",\n  \"language\": \"en-US\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/gemini/initialize",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "gemini", "initialize"]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const response = pm.response.json();",
+                      "    if (response.success && response.data) {",
+                      "        pm.environment.set('gemini_session_id', response.data.sessionId);",
+                      "        console.log('Session ID stored:', response.data.sessionId);",
+                      "        pm.test('Gemini session initialized', function () {",
+                      "            pm.expect(response.success).to.be.true;",
+                      "            pm.expect(response.data.sessionId).to.be.a('string');",
+                      "            pm.expect(response.data.sessionId).to.match(/^[a-z0-9]{25}$/); // CUID format",
+                      "        });",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Send Audio to Gemini",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{gemini_session_id}}\",\n  \"audioData\": \"data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhDh4=\",\n  \"mimeType\": \"audio/wav\",\n  \"inputType\": \"audio\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/gemini/send-audio",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "gemini", "send-audio"]
+                }
+              }
+            },
+            {
+              "name": "Gemini Conversation - Send Text",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{gemini_session_id}}\",\n  \"userInput\": \"Hello, I need help preparing for a job interview. Can you ask me a technical question?\",\n  \"inputType\": \"text\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/gemini/conversation",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "gemini", "conversation"]
+                }
+              }
+            },
+            {
+              "name": "Gemini Conversation - Send Image Only",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{gemini_session_id}}\",\n  \"imageData\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\",\n  \"mimeType\": \"image/png\",\n  \"inputType\": \"image\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/gemini/conversation",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "gemini", "conversation"]
+                }
+              }
+            },
+            {
+              "name": "Gemini Conversation - Send Image + Text Question",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{gemini_session_id}}\",\n  \"userInput\": \"What do you see in this image? How would I explain this in a job interview?\",\n  \"imageData\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\",\n  \"mimeType\": \"image/png\",\n  \"inputType\": \"image\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/gemini/conversation",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "gemini", "conversation"]
+                }
+              }
+            },
+            {
+              "name": "Gemini Conversation - Send Audio",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{gemini_session_id}}\",\n  \"audioData\": \"data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2+LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhDh4=\",\n  \"mimeType\": \"audio/wav\",\n  \"inputType\": \"audio\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/gemini/conversation",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "gemini", "conversation"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Perplexity",
+          "item": [
+            {
+              "name": "Perplexity Search",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"What are the latest trends in artificial intelligence for 2024?\",\n  \"maxResults\": 10,\n  \"includeImages\": false\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/ai/perplexity/search",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "ai", "perplexity", "search"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Profile Testing",
+      "item": [
+        {
+          "name": "Interview Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"I'm preparing for a software engineer interview. Can you help me with common technical questions?\",\n  \"maxResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          }
+        },
+        {
+          "name": "Sales Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Help me create a sales pitch for our new SaaS product - best practices and strategies\",\n  \"maxResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          }
+        },
+        {
+          "name": "Meeting Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"I need to prepare an agenda for our team meeting - best practices and templates\",\n  \"maxResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          }
+        },
+        {
+          "name": "Presentation Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Help me structure a presentation about AI trends - frameworks and best practices\",\n  \"maxResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          }
+        },
+        {
+          "name": "Negotiation Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"I need to negotiate a contract. What strategies and tactics should I use?\",\n  \"maxResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          }
+        },
+        {
+          "name": "Exam Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Help me study for my computer science exam - key concepts and study strategies\",\n  \"maxResults\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Rate Limiting Tests",
+      "item": [
+        {
+          "name": "Test Rate Limiting - Rapid Requests",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Rate limit test message - testing rate limiting functionality\",\n  \"maxResults\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/perplexity/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "perplexity", "search"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting response', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 429]);",
+                  "    if (pm.response.code === 429) {",
+                  "        pm.expect(pm.response.json().error).to.include('rate limit');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Auto-set base URL if not set",
+          "if (!pm.environment.get('base_url')) {",
+          "    pm.environment.set('base_url', 'http://localhost:3000');",
+          "}",
+          "",
+          "// Auto-set test user credentials if not set",
+          "if (!pm.environment.get('user_email')) {",
+          "    pm.environment.set('user_email', 'test@elkbackend.com');",
+          "}",
+          "if (!pm.environment.get('user_password')) {",
+          "    pm.environment.set('user_password', 'TestPassword123!');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "user_email",
+      "value": "test@elkbackend.com",
+      "type": "string"
+    },
+    {
+      "key": "user_password",
+      "value": "TestPassword123!",
+      "type": "string"
+    }
+  ]
+}

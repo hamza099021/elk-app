@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Listen - Interview Assistant</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            html, body {
+                height: 100%;
+                background: transparent;
+                overflow: hidden;
+            }
+            listen-view {
+                display: block;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <listen-view id="listenView"></listen-view>
+        
+        <script type="module">
+            import { ListenView } from './components/views/ListenView.js';
+            
+            const { ipcRenderer } = require('electron');
+            
+            const listenView = document.getElementById('listenView');
+            
+            // Load transparency setting from localStorage (synced with main app)
+            const updateTransparency = () => {
+                try {
+                    const backgroundTransparency = localStorage.getItem('backgroundTransparency');
+                    const alpha = backgroundTransparency !== null ? parseFloat(backgroundTransparency) : 0.5;
+                    
+                    const root = document.documentElement;
+                    root.style.setProperty('--app-background', `rgba(0, 0, 0, ${alpha})`);
+                    
+                    const baseBlur = 10 + (alpha * 30);
+                    const strongBlur = 20 + (alpha * 40);
+                    const subtleBlur = 5 + (alpha * 15);
+                    root.style.setProperty('--glass-blur', `blur(${baseBlur}px)`);
+                    root.style.setProperty('--glass-blur-strong', `blur(${strongBlur}px)`);
+                    root.style.setProperty('--glass-blur-subtle', `blur(${subtleBlur}px)`);
+                } catch (e) {
+                    console.error('Error loading transparency:', e);
+                }
+            };
+            
+            updateTransparency();
+            
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'backgroundTransparency') {
+                    updateTransparency();
+                }
+            });
+
+            ipcRenderer.on('update-transparency', (event, alpha) => {
+                localStorage.setItem('backgroundTransparency', alpha);
+                updateTransparency();
+            });
+            
+            // Handle close button
+            listenView.onClose = () => {
+                ipcRenderer.send('close-listen-window');
+            };
+            
+            // Throttled streaming updates: accumulate incoming text and update the DOM
+            // directly while streaming to avoid heavy HTML parsing on every chunk.
+            let streamingBuffer = '';
+            let streamingActive = false;
+            let streamingTimer = null;
+            const STREAM_UPDATE_INTERVAL = 80; // ms - UI update throttle while streaming
+            const STREAM_FINAL_DEBOUNCE = 400; // ms - wait after last chunk to finalize
+
+            function applyStreamingTextToDOM(text) {
+                try {
+                    // Prefer updating the rendered DOM directly to avoid re-running
+                    // expensive markdown/wrapping logic on every chunk.
+                    const container = listenView.shadowRoot && listenView.shadowRoot.querySelector('.response-content');
+                    if (container) {
+                        // Set plain text for streaming (fast). We'll render markdown when stream finalizes.
+                        container.textContent = text;
+                    } else {
+                        // Fallback - set the property which will trigger a full render
+                        listenView.response = text;
+                    }
+                } catch (e) {
+                    console.warn('Error applying streaming text to DOM:', e);
+                }
+            }
+
+            function scheduleStreamFlush() {
+                if (streamingTimer) clearTimeout(streamingTimer);
+                streamingTimer = setTimeout(() => {
+                    // Finalize the stream: set full response and trigger full markdown rendering
+                    streamingActive = false;
+                    const final = streamingBuffer;
+                    streamingBuffer = '';
+                    // Set the full response property so ListenView can run its normal markdown wrapping
+                    listenView.response = final;
+                    listenView.requestUpdate();
+                    // After full render, ensure window is resized
+                    setTimeout(() => {
+                        try { listenView._resizeWindowToFit(); } catch (e) {}
+                    }, 50);
+                }, STREAM_FINAL_DEBOUNCE);
+            }
+
+            ipcRenderer.on('listen-response-update', (event, response) => {
+                if (!response) return;
+                // If response is large or streaming, use the fast path
+                streamingBuffer = response; // always keep last value
+
+                if (!streamingActive) {
+                    streamingActive = true;
+                    // Start periodic UI updates
+                    applyStreamingTextToDOM(streamingBuffer);
+                    streamingTimer = setTimeout(function periodicUpdate() {
+                        if (!streamingActive) return;
+                        applyStreamingTextToDOM(streamingBuffer);
+                        streamingTimer = setTimeout(periodicUpdate, STREAM_UPDATE_INTERVAL);
+                    }, STREAM_UPDATE_INTERVAL);
+                }
+
+                // Restart finalization debounce
+                scheduleStreamFlush();
+            });
+
+            // Listen for status updates (eg. Listening... / Stopped)
+            ipcRenderer.on('listen-status', (event, isListening) => {
+                console.log('[ListenWindow] Received status update:', isListening);
+                if (listenView) {
+                    listenView.isListening = isListening;
+                    listenView.requestUpdate(); // Force Lit to re-render header/status
+                }
+                // If we've been told stopped, finalize any streaming immediately
+                if (!isListening && streamingActive) {
+                    // Clear periodic updates and flush immediately
+                    streamingActive = false;
+                    if (streamingTimer) { clearTimeout(streamingTimer); streamingTimer = null; }
+                    const final = streamingBuffer;
+                    streamingBuffer = '';
+                    listenView.response = final;
+                    listenView.requestUpdate();
+                    setTimeout(() => { try { listenView._resizeWindowToFit(); } catch (e) {} }, 50);
+                }
+            });
+        </script>
+    </body>
+</html>

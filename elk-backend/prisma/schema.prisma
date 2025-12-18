@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  subscription Subscription?
+  usage        Usage?
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique @map("user_id")
+  paypalSubscriptionId String?            @unique @map("paypal_subscription_id")
+  plan                 SubscriptionPlan
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime           @map("current_period_start")
+  currentPeriodEnd     DateTime           @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  PAST_DUE
+}
+
+model Usage {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  
+  // Monthly quotas
+  screenQaCount   Int      @default(0) @map("screen_qa_count")
+  audioMinutes    Float    @default(0) @map("audio_minutes")
+  webQueriesCount Int      @default(0) @map("web_queries_count")
+  
+  // Reset tracking
+  lastResetDate   DateTime @default(now()) @map("last_reset_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usageHistory UsageHistory[]
+
+  @@map("usage")
+}
+
+model UsageHistory {
+  id          String      @id @default(cuid())
+  usageId     String      @map("usage_id")
+  featureType FeatureType @map("feature_type")
+  amount      Float
+  timestamp   DateTime    @default(now())
+
+  usage Usage @relation(fields: [usageId], references: [id], onDelete: Cascade)
+
+  @@map("usage_history")
+}
+
+enum FeatureType {
+  SCREEN_QA
+  AUDIO_MINUTES
+  WEB_QUERIES
+}
+
+model AISession {
+  id           String      @id @default(cuid())
+  userId       String      @map("user_id")
+  sessionType  SessionType @map("session_type")
+  status       String      @default("active")
+  profile      String      @default("interview")
+  language     String      @default("en-US")
+  tokensUsed   Int         @default(0) @map("tokens_used")
+  startedAt    DateTime    @default(now()) @map("started_at")
+  endedAt      DateTime?   @map("ended_at")
+  
+  conversations Conversation[]
+
+  @@map("ai_sessions")
+}
+
+enum SessionType {
+  LIVE_CONVERSATION
+  SCREEN_QA
+  WEB_QUERY
+}
+
+model Conversation {
+  id           String    @id @default(cuid())
+  sessionId    String    @map("session_id")
+  userInput    String?   @map("user_input")
+  aiResponse   String?   @map("ai_response")
+  inputType    String    @map("input_type") // text, audio, image
+  tokensUsed   Int       @default(0) @map("tokens_used")
+  timestamp    DateTime  @default(now())
+
+  session AISession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("conversations")
+}
+
+model RateLimit {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  endpoint   String
+  requests   Int      @default(0)
+  tokens     Int      @default(0)
+  windowStart DateTime @map("window_start")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, endpoint, windowStart])
+  @@map("rate_limits")
+}

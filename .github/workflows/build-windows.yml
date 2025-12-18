@@ -1,0 +1,40 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cheating-daddy/**'
+      - '.github/workflows/build-windows.yml'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: cheating-daddy/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: cheating-daddy
+        run: npm ci
+      
+      - name: Build Windows EXE
+        working-directory: cheating-daddy
+        run: npm run make -- --platform=win32 --arch=x64
+      
+      - name: Upload Windows x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheating-daddy-windows-x64
+          path: cheating-daddy/out/make/squirrel.windows/x64/*.exe
+          if-no-files-found: error
