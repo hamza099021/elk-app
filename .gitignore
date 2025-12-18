@@ -1,0 +1,52 @@
+# Sensitive files - DO NOT COMMIT
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+**/config/secrets.js
+**/config/api-keys.js
+
+# API Keys in backend
+elk-backend/.env
+elk-backend/.env.local
+elk-backend/.env.production
+elk-backend/.env.development
+
+# Node modules
+node_modules/
+**/node_modules/
+cheating-daddy/node_modules/
+elk-backend/node_modules/
+landing-page/node_modules/
+
+# Build outputs
+out/
+dist/
+build/
+.next/
+
+# Large video files (host elsewhere)
+landing-page/public/video/*.mp4
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test files
+coverage/
+.nyc_output/
+
+# Electron
+*.dmg
+*.exe
+*.deb
+*.rpm
+*.AppImage
