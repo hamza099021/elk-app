@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npx prisma migrate deploy && next start",
     "dev:server": "node server.js",
-    "start:server": "NODE_ENV=production node server.js",
+    "start:server": "npx prisma migrate deploy && NODE_ENV=production node server.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
