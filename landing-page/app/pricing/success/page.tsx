@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Force dynamic rendering to prevent build-time prerendering
-export const dynamic = 'force-dynamic';
-
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const subscriptionId = searchParams.get('subscriptionId');
   const plan = searchParams.get('plan');
@@ -61,5 +58,17 @@ export default function SuccessPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   );
 }
