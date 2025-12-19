@@ -26,9 +26,6 @@ dist/
 build/
 .next/
 
-# Large video files (host elsewhere)
-landing-page/public/video/*.mp4
-
 # OS files
 .DS_Store
 Thumbs.db
