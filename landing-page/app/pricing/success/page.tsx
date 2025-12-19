@@ -17,7 +17,7 @@ function SuccessContent() {
         if (prev <= 1) {
           clearInterval(timer);
           // Redirect to app download or login page
-          window.location.href = 'https://backend.elkai.cloud';
+          window.location.href = 'https://elkai.cloud';
         }
         return prev - 1;
       });
