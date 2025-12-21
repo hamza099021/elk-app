@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { registerSchema, createApiResponse } from '@/lib/validation'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +74,11 @@ export async function POST(request: NextRequest) {
     
     // Store session
     await auth.createSession(user.id, accessToken)
+    
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(user.email, user.firstName || 'User').catch(err => 
+      console.error('Failed to send welcome email:', err)
+    );
     
     return NextResponse.json(
       createApiResponse(true, {

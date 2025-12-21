@@ -13,7 +13,7 @@ datasource db {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String   @map("password_hash")
+  passwordHash String?  @map("password_hash")
   firstName    String?  @map("first_name")
   lastName     String?  @map("last_name")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -23,8 +23,22 @@ model User {
   subscription Subscription?
   usage        Usage?
   sessions     Session[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
 }
 
 model Session {
