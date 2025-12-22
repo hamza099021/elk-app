@@ -25,6 +25,14 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
+
+    // Check if user has a password set
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        createApiResponse(false, null, '', 'Please set up your password first'),
+        { status: 401 }
+      )
+    }
     
     // Verify password
     const isValidPassword = await auth.verifyPassword(password, user.passwordHash)
