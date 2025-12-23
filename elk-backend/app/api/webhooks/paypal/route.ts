@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { sendPasswordSetupEmail } from '@/lib/email';
+import { createId } from '@paralleldrive/cuid2';
 import crypto from 'crypto';
 
 // PayPal webhook event types we care about
@@ -133,6 +135,25 @@ async function handleSubscriptionActivated(resource: any) {
         currentPeriodEnd: nextMonth,
       },
     });
+  }
+
+  // Send password setup email if user doesn't have a password
+  if (!user.passwordHash) {
+    // Create password reset token
+    const token = createId();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+        used: false,
+      },
+    });
+
+    // Send email with setup link
+    await sendPasswordSetupEmail(user.email, token);
   }
 
   console.log(`User ${subscriberEmail} upgraded to PRO`);
