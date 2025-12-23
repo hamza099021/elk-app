@@ -25,7 +25,7 @@ export default function PricingPage() {
     if (window.paypal || paypalLoaded) return;
     
     const script = document.createElement('script');
-    script.src = 'https://www.paypal.com/sdk/js?client-id=AXecIPnXag_ElF0Lm2Zp7ZoETcDgu6UWxQC6osslu-0IdGaumfRxskgIXm_CMGKJeoPJBS58JdmeCv8C&vault=true&intent=subscription';
+    script.src = 'https://www.paypal.com/sdk/js?client-id=AfYqGVqacHWy0Qe7EsvyM1BeaK4sDtyJ-pdTqSxsO2USU1wrYjRkBD7u8N9MybyXFNDathXS-gGHEMYG&vault=true&intent=subscription';
     script.async = true;
     script.onload = () => {
       setPaypalLoaded(true);
