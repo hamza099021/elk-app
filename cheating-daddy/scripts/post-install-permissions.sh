@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Post-install script to help users grant necessary permissions
+echo "=== Cheating Daddy Setup ==="
+echo ""
+echo "To use screen capture features, you need to grant permissions:"
+echo ""
+echo "1. Open System Settings > Privacy & Security"
+echo "2. Click 'Screen Recording'"
+echo "3. Enable 'Cheating Daddy'"
+echo ""
+echo "If you don't see Cheating Daddy in the list:"
+echo "- Try opening the app once"
+echo "- Click 'Request Access' when prompted"
+echo "- Restart the app after granting permissions"
+echo ""
+echo "For audio capture:"
+echo "1. Go to Privacy & Security > Microphone"
+echo "2. Enable 'Cheating Daddy'"
+echo ""
+read -p "Press Enter to continue..."

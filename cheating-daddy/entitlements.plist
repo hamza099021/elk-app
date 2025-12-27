@@ -18,5 +18,9 @@
     <true/>
     <key>com.apple.security.network.server</key>
     <true/>
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    <key>com.apple.security.personal-information.screen-recording</key>
+    <true/>
   </dict>
 </plist>

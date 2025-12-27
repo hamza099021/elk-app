@@ -18,6 +18,17 @@ module.exports = {
                         if (fs.existsSync(binaryPath)) {
                             fs.chmodSync(binaryPath, 0o755);
                             console.log('Set execute permissions for SystemAudioDump');
+                            
+                            // Ad-hoc sign the binary on macOS
+                            if (platform === 'darwin') {
+                                const { execSync } = require('child_process');
+                                try {
+                                    execSync(`codesign --force --deep --sign - "${binaryPath}"`);
+                                    console.log('Ad-hoc signed SystemAudioDump');
+                                } catch (err) {
+                                    console.warn('Failed to sign SystemAudioDump:', err.message);
+                                }
+                            }
                         }
                     } catch (err) {
                         console.error('Failed to set execute permissions:', err);
@@ -28,15 +39,13 @@ module.exports = {
         ],
         // use `security find-identity -v -p codesigning` to find your identity
         // for macos signing
-        // also fuck apple
-        // osxSign: {
-        //    identity: '<paste your identity here>',
-        //   optionsForFile: (filePath) => {
-        //       return {
-        //           entitlements: 'entitlements.plist',
-        //       };
-        //   },
-        // },
+        osxSign: {
+            identity: '-', // Ad-hoc signing
+            entitlements: 'entitlements.plist',
+            'entitlements-inherit': 'entitlements.plist',
+            'gatekeeper-assess': false,
+            hardenedRuntime: true,
+        },
         // notarize if off cuz i ran this for 6 hours and it still didnt finish
         // osxNotarize: {
         //    appleId: 'your apple id',
