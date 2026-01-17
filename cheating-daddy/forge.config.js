@@ -40,7 +40,7 @@ module.exports = {
         // use `security find-identity -v -p codesigning` to find your identity
         // for macos signing
         osxSign: {
-            identity: '-', // Ad-hoc signing
+            identity: 'Developer ID Application: Arnav Ramakrishnan (9225CLJSN7)',
             entitlements: 'entitlements.plist',
             'entitlements-inherit': 'entitlements.plist',
             'gatekeeper-assess': false,
