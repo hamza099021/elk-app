@@ -46,12 +46,11 @@ module.exports = {
             'gatekeeper-assess': false,
             hardenedRuntime: true,
         },
-        // notarize if off cuz i ran this for 6 hours and it still didnt finish
-        // osxNotarize: {
-        //    appleId: 'your apple id',
-        //    appleIdPassword: 'app specific password',
-        //    teamId: 'your team id',
-        // },
+        osxNotarize: {
+            appleId: process.env.APPLE_ID || 'devarnavramakrishnan@gmail.com',
+            appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
+            teamId: process.env.APPLE_TEAM_ID || '9225CLJSN7',
+        },
     },
     rebuildConfig: {},
     makers: [

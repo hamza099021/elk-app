@@ -23,6 +23,25 @@ jobs:
         node-version: '20'
         cache: 'npm'
         cache-dependency-path: 'cheating-daddy/package-lock.json'
+    
+    - name: Setup signing certificate
+      env:
+        CERTIFICATE_P12: ${{ secrets.CERTIFICATE_P12 }}
+        CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+      run: |
+        # Create keychain
+        security create-keychain -p actions build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p actions build.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        
+        # Import certificate
+        echo "$CERTIFICATE_P12" | base64 --decode > certificate.p12
+        security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
+        security set-key-partition-list -S apple-tool:,apple: -s -k actions build.keychain
+        
+        # Clean up
+        rm certificate.p12
         
     - name: Install dependencies
       working-directory: ./cheating-daddy
@@ -33,12 +52,18 @@ jobs:
       run: npm run make -- --platform=darwin --arch=arm64
       env:
         CI: true
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       
     - name: Build DMG for Mac (Intel)
       working-directory: ./cheating-daddy
       run: npm run make -- --platform=darwin --arch=x64
       env:
         CI: true
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       
     - name: List build outputs
       working-directory: ./cheating-daddy
