@@ -9,6 +9,7 @@ module.exports = {
         extraResource: ['./src/assets/SystemAudioDump'],
         name: 'Cheating Daddy',
         icon: 'src/assets/logo',
+        appBundleId: 'com.cheatingdaddy.app', // Unique bundle ID for macOS permissions
         afterCopy: [
             (buildPath, electronVersion, platform, arch, callback) => {
                 // Set execute permissions for SystemAudioDump on macOS and Linux
