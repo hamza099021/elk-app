@@ -46,11 +46,12 @@ module.exports = {
             'gatekeeper-assess': false,
             hardenedRuntime: true,
         },
-        osxNotarize: {
-            appleId: process.env.APPLE_ID || 'devarnavramakrishnan@gmail.com',
-            appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
-            teamId: process.env.APPLE_TEAM_ID || '9225CLJSN7',
-        },
+        // Notarization disabled - takes too long (45+ min). App still works, users just need right-click → Open
+        // osxNotarize: {
+        //     appleId: process.env.APPLE_ID || 'devarnavramakrishnan@gmail.com',
+        //     appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
+        //     teamId: process.env.APPLE_TEAM_ID || '9225CLJSN7',
+        // },
     },
     rebuildConfig: {},
     makers: [
