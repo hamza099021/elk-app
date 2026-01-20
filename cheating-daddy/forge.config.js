@@ -13,35 +13,7 @@ module.exports = {
         appBundleId: 'com.cheatingdaddy.app', // Unique bundle ID for macOS permissions
         afterCopy: [
             (buildPath, electronVersion, platform, arch, callback) => {
-                // Set execute permissions for SystemAudioDump on macOS and Linux
-                if (platform === 'darwin' || platform === 'linux') {
-                    const binaryPath = path.join(buildPath, 'src', 'assets', 'SystemAudioDump');
-                    try {
-                        if (fs.existsSync(binaryPath)) {
-                            fs.chmodSync(binaryPath, 0o755);
-                            console.log('Set execute permissions for SystemAudioDump');
-                            
-                            // Sign SystemAudioDump with Developer ID for notarization
-                            if (platform === 'darwin') {
-                                const { execSync } = require('child_process');
-                                try {
-                                    const identity = 'Developer ID Application: Arnav Ramakrishnan (9225CLJSN7)';
-                                    console.log('Signing SystemAudioDump with Developer ID...');
-                                    execSync(
-                                        `codesign --force --options runtime --sign "${identity}" --timestamp "${binaryPath}"`,
-                                        { stdio: 'inherit' }
-                                    );
-                                    console.log('✅ Signed SystemAudioDump with Developer ID');
-                                } catch (err) {
-                                    console.error('❌ Failed to sign SystemAudioDump:', err.message);
-                                    // Don't fail build, but this will likely cause notarization to fail
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.error('Failed to set execute permissions:', err);
-                    }
-                }
+                console.log('⚠️ SystemAudioDump processing DISABLED for testing - skipping all binary signing');
                 callback();
             }
         ],
