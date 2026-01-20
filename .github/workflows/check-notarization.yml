@@ -1,0 +1,60 @@
+name: Check Notarization Logs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-logs:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Get Recent Notarization Submissions
+      run: |
+        echo "================================================"
+        echo "📋 Recent Notarization Submissions"
+        echo "================================================"
+        
+        xcrun notarytool history \
+          --apple-id "${{ secrets.APPLE_ID }}" \
+          --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+          --team-id "${{ secrets.APPLE_TEAM_ID }}"
+    
+    - name: Get Detailed Logs for Recent Submissions
+      run: |
+        echo ""
+        echo "================================================"
+        echo "📋 Getting Detailed Logs"
+        echo "================================================"
+        
+        # Get the 5 most recent submission IDs
+        SUBMISSIONS=$(xcrun notarytool history \
+          --apple-id "${{ secrets.APPLE_ID }}" \
+          --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+          --team-id "${{ secrets.APPLE_TEAM_ID }}" \
+          | grep "id:" | head -5 | awk '{print $2}')
+        
+        for SUBMISSION_ID in $SUBMISSIONS; do
+          echo ""
+          echo "================================================"
+          echo "🔍 Logs for Submission: $SUBMISSION_ID"
+          echo "================================================"
+          
+          # Get detailed info
+          xcrun notarytool info "$SUBMISSION_ID" \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}"
+          
+          echo ""
+          echo "📄 Full Log:"
+          
+          # Get the actual log
+          xcrun notarytool log "$SUBMISSION_ID" \
+            --apple-id "${{ secrets.APPLE_ID }}" \
+            --password "${{ secrets.APPLE_ID_PASSWORD }}" \
+            --team-id "${{ secrets.APPLE_TEAM_ID }}" \
+            || echo "⚠️  Could not retrieve log (might still be in progress)"
+          
+          echo ""
+          echo "================================================"
+        done
