@@ -53,6 +53,7 @@ jobs:
       run: npm run make -- --platform=darwin --arch=arm64
       env:
         CI: true
+        DEBUG: electron-notarize*
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -63,6 +64,7 @@ jobs:
       run: npm run make -- --platform=darwin --arch=x64
       env:
         CI: true
+        DEBUG: electron-notarize*
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
