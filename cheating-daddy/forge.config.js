@@ -19,8 +19,23 @@ module.exports = {
                         if (fs.existsSync(binaryPath)) {
                             fs.chmodSync(binaryPath, 0o755);
                             console.log('Set execute permissions for SystemAudioDump');
-                            // Note: Do NOT ad-hoc sign here - osxSign will properly sign
-                            // with Developer ID certificate for notarization
+                            
+                            // Sign SystemAudioDump with Developer ID for notarization
+                            if (platform === 'darwin') {
+                                const { execSync } = require('child_process');
+                                try {
+                                    const identity = 'Developer ID Application: Arnav Ramakrishnan (9225CLJSN7)';
+                                    console.log('Signing SystemAudioDump with Developer ID...');
+                                    execSync(
+                                        `codesign --force --options runtime --sign "${identity}" --timestamp "${binaryPath}"`,
+                                        { stdio: 'inherit' }
+                                    );
+                                    console.log('✅ Signed SystemAudioDump with Developer ID');
+                                } catch (err) {
+                                    console.error('❌ Failed to sign SystemAudioDump:', err.message);
+                                    // Don't fail build, but this will likely cause notarization to fail
+                                }
+                            }
                         }
                     } catch (err) {
                         console.error('Failed to set execute permissions:', err);
