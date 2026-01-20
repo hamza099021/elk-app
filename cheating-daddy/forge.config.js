@@ -6,7 +6,8 @@ const path = require('path');
 module.exports = {
     packagerConfig: {
         asar: true,
-        extraResource: ['./src/assets/SystemAudioDump'],
+        // Temporarily disabled to test if SystemAudioDump is causing notarization hang
+        // extraResource: ['./src/assets/SystemAudioDump'],
         name: 'Cheating Daddy',
         icon: 'src/assets/logo',
         appBundleId: 'com.cheatingdaddy.app', // Unique bundle ID for macOS permissions
