@@ -1,0 +1,180 @@
+name: Test Apple Credentials
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  test-credentials:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Test Apple Credentials
+      run: |
+        echo "================================================"
+        echo "🔍 Testing Apple Notarization Credentials"
+        echo "================================================"
+        echo ""
+        
+        # Test 1: Check if secrets are set
+        echo "📋 Step 1: Checking if secrets exist..."
+        MISSING=""
+        
+        if [ -z "$APPLE_ID" ]; then
+          echo "❌ APPLE_ID is NOT set"
+          MISSING="${MISSING}APPLE_ID "
+        else
+          echo "✅ APPLE_ID is set: ${APPLE_ID}"
+        fi
+        
+        if [ -z "$APPLE_ID_PASSWORD" ]; then
+          echo "❌ APPLE_ID_PASSWORD is NOT set"
+          MISSING="${MISSING}APPLE_ID_PASSWORD "
+        else
+          # Show only first/last 4 chars for security
+          PASS_LEN=${#APPLE_ID_PASSWORD}
+          if [ $PASS_LEN -gt 8 ]; then
+            PASS_PREVIEW="${APPLE_ID_PASSWORD:0:4}****${APPLE_ID_PASSWORD: -4}"
+          else
+            PASS_PREVIEW="****"
+          fi
+          echo "✅ APPLE_ID_PASSWORD is set: ${PASS_PREVIEW} (length: ${PASS_LEN})"
+          
+          # Check format (should be xxxx-xxxx-xxxx-xxxx)
+          if [[ "$APPLE_ID_PASSWORD" =~ ^[a-z]{4}-[a-z]{4}-[a-z]{4}-[a-z]{4}$ ]]; then
+            echo "   ✅ Format looks like app-specific password (xxxx-xxxx-xxxx-xxxx)"
+          else
+            echo "   ⚠️  WARNING: Doesn't match app-specific password format"
+            echo "   Expected: xxxx-xxxx-xxxx-xxxx (lowercase letters only)"
+          fi
+        fi
+        
+        if [ -z "$APPLE_TEAM_ID" ]; then
+          echo "❌ APPLE_TEAM_ID is NOT set"
+          MISSING="${MISSING}APPLE_TEAM_ID "
+        else
+          echo "✅ APPLE_TEAM_ID is set: ${APPLE_TEAM_ID}"
+          
+          # Check format (should be 10 alphanumeric chars)
+          if [[ "$APPLE_TEAM_ID" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo "   ✅ Format looks correct (10 alphanumeric characters)"
+          else
+            echo "   ⚠️  WARNING: Team ID should be 10 alphanumeric characters"
+            echo "   Current length: ${#APPLE_TEAM_ID}"
+          fi
+        fi
+        
+        echo ""
+        
+        if [ -n "$MISSING" ]; then
+          echo "================================================"
+          echo "❌ MISSING SECRETS: ${MISSING}"
+          echo "================================================"
+          echo ""
+          echo "Please set these in GitHub:"
+          echo "https://github.com/${{ github.repository }}/settings/secrets/actions"
+          exit 1
+        fi
+        
+        echo "================================================"
+        echo "✅ All secrets are set, testing authentication..."
+        echo "================================================"
+        echo ""
+        
+        # Test 2: Check if xcrun/notarytool is available
+        echo "📋 Step 2: Checking notarytool availability..."
+        if ! command -v xcrun &> /dev/null; then
+          echo "❌ xcrun not found"
+          exit 1
+        fi
+        echo "✅ xcrun is available"
+        
+        if ! xcrun --find notarytool &> /dev/null; then
+          echo "❌ notarytool not found"
+          exit 1
+        fi
+        echo "✅ notarytool is available"
+        echo ""
+        
+        # Test 3: Test authentication with Apple
+        echo "================================================"
+        echo "📋 Step 3: Testing authentication with Apple..."
+        echo "================================================"
+        echo "Running: xcrun notarytool history"
+        echo ""
+        
+        # Capture both stdout and stderr
+        if OUTPUT=$(xcrun notarytool history \
+          --apple-id "$APPLE_ID" \
+          --password "$APPLE_ID_PASSWORD" \
+          --team-id "$APPLE_TEAM_ID" 2>&1); then
+          
+          echo "✅ ✅ ✅ AUTHENTICATION SUCCESSFUL! ✅ ✅ ✅"
+          echo ""
+          echo "Your Apple credentials are working correctly."
+          echo "Notarization history:"
+          echo "$OUTPUT"
+          
+        else
+          echo "❌ ❌ ❌ AUTHENTICATION FAILED! ❌ ❌ ❌"
+          echo ""
+          echo "Error output:"
+          echo "$OUTPUT"
+          echo ""
+          echo "================================================"
+          echo "Common Issues & Solutions:"
+          echo "================================================"
+          echo ""
+          
+          if echo "$OUTPUT" | grep -iq "invalid credentials"; then
+            echo "❌ PROBLEM: Invalid credentials"
+            echo ""
+            echo "Solutions:"
+            echo "1. APPLE_ID_PASSWORD must be an APP-SPECIFIC password"
+            echo "   - Go to: https://appleid.apple.com/account/manage"
+            echo "   - Sign in with: ${APPLE_ID}"
+            echo "   - Navigate to: Security → App-Specific Passwords"
+            echo "   - Generate new password"
+            echo "   - Update APPLE_ID_PASSWORD secret in GitHub"
+            echo ""
+            echo "2. Check APPLE_ID email is correct: ${APPLE_ID}"
+            echo ""
+          
+          elif echo "$OUTPUT" | grep -iq "team"; then
+            echo "❌ PROBLEM: Team ID issue"
+            echo ""
+            echo "Solutions:"
+            echo "1. Verify your Team ID"
+            echo "   - Go to: https://developer.apple.com/account"
+            echo "   - Sign in with: ${APPLE_ID}"
+            echo "   - Look for 'Team ID' (10 characters)"
+            echo ""
+            echo "2. Current Team ID: ${APPLE_TEAM_ID}"
+            echo "   - Should be 10 alphanumeric characters"
+            echo ""
+          
+          elif echo "$OUTPUT" | grep -iq "password"; then
+            echo "❌ PROBLEM: Password format issue"
+            echo ""
+            echo "The password must be an app-specific password, not your"
+            echo "regular Apple ID password."
+            echo ""
+            echo "Generate one at: https://appleid.apple.com/account/manage"
+            echo ""
+          
+          else
+            echo "❌ PROBLEM: Unknown authentication error"
+            echo ""
+            echo "Check that:"
+            echo "1. Your Apple ID has a paid Developer Program membership"
+            echo "2. All credentials are copied correctly (no extra spaces)"
+            echo "3. The app-specific password hasn't been revoked"
+            echo ""
+          fi
+          
+          exit 1
+        fi
+        
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
