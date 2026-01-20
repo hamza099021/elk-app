@@ -19,17 +19,8 @@ module.exports = {
                         if (fs.existsSync(binaryPath)) {
                             fs.chmodSync(binaryPath, 0o755);
                             console.log('Set execute permissions for SystemAudioDump');
-                            
-                            // Ad-hoc sign the binary on macOS
-                            if (platform === 'darwin') {
-                                const { execSync } = require('child_process');
-                                try {
-                                    execSync(`codesign --force --deep --sign - "${binaryPath}"`);
-                                    console.log('Ad-hoc signed SystemAudioDump');
-                                } catch (err) {
-                                    console.warn('Failed to sign SystemAudioDump:', err.message);
-                                }
-                            }
+                            // Note: Do NOT ad-hoc sign here - osxSign will properly sign
+                            // with Developer ID certificate for notarization
                         }
                     } catch (err) {
                         console.error('Failed to set execute permissions:', err);

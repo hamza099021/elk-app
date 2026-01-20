@@ -49,6 +49,7 @@ jobs:
       
     - name: Build DMG for Mac (Apple Silicon)
       working-directory: ./cheating-daddy
+      timeout-minutes: 45
       run: npm run make -- --platform=darwin --arch=arm64
       env:
         CI: true
@@ -58,6 +59,7 @@ jobs:
       
     - name: Build DMG for Mac (Intel)
       working-directory: ./cheating-daddy
+      timeout-minutes: 45
       run: npm run make -- --platform=darwin --arch=x64
       env:
         CI: true
