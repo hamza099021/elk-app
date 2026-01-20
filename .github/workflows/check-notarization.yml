@@ -26,12 +26,12 @@ jobs:
         echo "📋 Getting Detailed Logs"
         echo "================================================"
         
-        # Get the 5 most recent submission IDs
+        # Get the 15 most recent submission IDs
         SUBMISSIONS=$(xcrun notarytool history \
           --apple-id "${{ secrets.APPLE_ID }}" \
           --password "${{ secrets.APPLE_ID_PASSWORD }}" \
           --team-id "${{ secrets.APPLE_TEAM_ID }}" \
-          | grep "id:" | head -5 | awk '{print $2}')
+          | grep "id:" | head -15 | awk '{print $2}')
         
         for SUBMISSION_ID in $SUBMISSIONS; do
           echo ""
