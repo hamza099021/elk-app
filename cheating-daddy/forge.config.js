@@ -7,7 +7,7 @@ module.exports = {
     packagerConfig: {
         asar: true,
         extraResource: ['./src/assets/SystemAudioDump'],
-        name: 'Cheating Daddy',
+        name: 'CheatingDaddy',
         icon: 'src/assets/logo',
         appBundleId: 'com.cheatingdaddy.app', // Unique bundle ID for macOS permissions
         afterCopy: [
